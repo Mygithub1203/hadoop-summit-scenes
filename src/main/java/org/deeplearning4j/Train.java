@@ -19,7 +19,6 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.StandardScaler;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -37,12 +36,13 @@ public class Train {
         String activation = "leakyrelu";
         int iterations = 10;
         int seed = 123;
+
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
-        int numLabels = 6;
-        WeightInit weightInit = WeightInit.XAVIER;
+        int numLabels = 4;
+        WeightInit weightInit = WeightInit.RELU;
         MultiLayerNetwork multiLayerNetwork = null;
         SparkConf sparkConf = new SparkConf().setMaster("local[*]")
-                .set("spark.driver.maxResultSize","3g")
+                .set("spark.driver.maxResultSize","6g")
                 .setAppName("computer vision");
         SparkContext sparkContext = new SparkContext(sparkConf);
         SparkDl4jMultiLayer sparkDl4jMultiLayer = null;
@@ -55,6 +55,17 @@ public class Train {
             stream.close();
             return d;
         });
+
+        int numWorkers = Runtime.getRuntime().availableProcessors();
+        ParameterAveragingTrainingMaster trainingMaster = new ParameterAveragingTrainingMaster(true,8,32,1,10,true);
+
+        if(new File("model-load.zip").exists()) {
+            multiLayerNetwork = ModelSerializer.restoreMultiLayerNetwork(new File("model-load.zip"));
+            channels = 1;
+            multiLayerNetwork.setListeners(new ScoreIterationListener(1));
+            sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sparkContext,multiLayerNetwork,trainingMaster);
+
+        }
 
 
         for(int i = 0; i < iterations; i++) {
@@ -73,13 +84,10 @@ public class Train {
                         .seed(seed)
                         .activation(activation)
                         .iterations(1)
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(optimizer)
                         .updater(Updater.NESTEROVS)
-                        .learningRate(0.01)
+                        .learningRate(0.1)
                         .momentum(0.9)
-                        .regularization(true)
-                        .l2(0.04)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5)
                                 .name("cnn1")
@@ -128,14 +136,17 @@ public class Train {
                 multiLayerNetwork = new MultiLayerNetwork(builder.build());
                 multiLayerNetwork.init();
                 multiLayerNetwork.setListeners(new ScoreIterationListener(1));
-                sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sparkContext,multiLayerNetwork,new ParameterAveragingTrainingMaster(true,8,32,5,10,true));
+                sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sparkContext,multiLayerNetwork,trainingMaster);
 
             }
 
 
 
 
-            sparkDl4jMultiLayer.fit(dataSetJavaRDD);
+            multiLayerNetwork =  sparkDl4jMultiLayer.fit(dataSetJavaRDD);
+            ModelSerializer.writeModel(multiLayerNetwork,new File(String.format("model-%d.zip",i)),false);
+            sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sparkContext,multiLayerNetwork,trainingMaster);
+
            /* System.out.println("Batch " + batch + " processed");
             batch++;*/
         }
@@ -144,7 +155,6 @@ public class Train {
         //}
 
 
-        ModelSerializer.writeModel(multiLayerNetwork,new File("model.zip"),false);
         System.out.println("Done training");
     }
 

@@ -8,6 +8,7 @@ import org.nd4j.linalg.dataset.BalanceMinibatches;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import java.io.File;
@@ -21,12 +22,12 @@ public class Preprocess {
         int height = 128;
         int width = 128;
         int channels = 3;
-        int batchSize = 64;
+        int batchSize = 128;
 
         ImageRecordReader reader = new ImageRecordReader(height,width,channels,new ParentPathLabelGenerator());
         reader.initialize(new FileSplit(new File("data")));
         DataSetIterator iterator = new RecordReaderDataSetIterator(reader,batchSize);
-        DataNormalization scaler = new NormalizerStandardize();
+        DataNormalization scaler = new NormalizerMinMaxScaler(0,1);
         scaler.fit(iterator);
         iterator.reset();
         while(iterator.hasNext()) {
