@@ -47,7 +47,7 @@ public class Train {
         SparkContext sparkContext = new SparkContext(sparkConf);
         SparkDl4jMultiLayer sparkDl4jMultiLayer = null;
 
-        JavaRDD<DataSet> dataSetJavaRDD = sparkContext.binaryFiles("file:///home/agibsonccc/code/scene-classification/minibatchessave",8).toJavaRDD().map(v1 -> {
+        JavaRDD<DataSet> dataSetJavaRDD = sparkContext.binaryFiles("file://scene-classification/minibatchessave",8).toJavaRDD().map(v1 -> {
             PortableDataStream stream = v1._2();
             InputStream is = stream.open();
             DataSet d = new DataSet();
