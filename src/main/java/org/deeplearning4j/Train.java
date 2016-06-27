@@ -46,8 +46,10 @@ public class Train {
                 .setAppName("computer vision");
         SparkContext sparkContext = new SparkContext(sparkConf);
         SparkDl4jMultiLayer sparkDl4jMultiLayer = null;
+        int numWorkers = Runtime.getRuntime().availableProcessors();
 
-        JavaRDD<DataSet> dataSetJavaRDD = sparkContext.binaryFiles("file://scene-classification/minibatchessave",8).toJavaRDD().map(v1 -> {
+        String sceneDirectory = System.getProperty("user.dir");
+        JavaRDD<DataSet> dataSetJavaRDD = sparkContext.binaryFiles(String.format("file://%s/minibatchessave",sceneDirectory),numWorkers).toJavaRDD().map(v1 -> {
             PortableDataStream stream = v1._2();
             InputStream is = stream.open();
             DataSet d = new DataSet();
@@ -56,8 +58,9 @@ public class Train {
             return d;
         });
 
-        int numWorkers = Runtime.getRuntime().availableProcessors();
-        ParameterAveragingTrainingMaster trainingMaster = new ParameterAveragingTrainingMaster(true,8,32,1,10,true);
+
+
+        ParameterAveragingTrainingMaster trainingMaster = new ParameterAveragingTrainingMaster(true,numWorkers,32,1,10,true);
 
         if(new File("model-load.zip").exists()) {
             multiLayerNetwork = ModelSerializer.restoreMultiLayerNetwork(new File("model-load.zip"));
