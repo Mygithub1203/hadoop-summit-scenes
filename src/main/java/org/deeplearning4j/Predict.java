@@ -19,7 +19,7 @@ public class Predict {
         DataSet d;
         DataSetIterator existingIterator = new ExistingMiniBatchDataSetIterator(new File("minibatchessave"));
         Evaluation eval = new Evaluation(4);
-        MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(new File("model-0.zip"));
+        MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(new File(args[0]));
         while(existingIterator.hasNext()) {
             d = existingIterator.next();
             INDArray predict = network.output(d.getFeatureMatrix());
