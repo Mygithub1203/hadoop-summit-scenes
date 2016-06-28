@@ -86,7 +86,7 @@ public class Train {
                         .weightInit(weightInit)
                         .seed(seed)
                         .activation(activation)
-                        .iterations(1)
+                        .iterations(1).miniBatch(false)
                         .optimizationAlgo(optimizer)
                         .updater(Updater.NESTEROVS)
                         .learningRate(0.1)
