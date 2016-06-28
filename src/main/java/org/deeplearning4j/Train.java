@@ -34,7 +34,7 @@ public class Train {
         int rows =  -1;
         int cols = -1;
         String activation = "leakyrelu";
-        int iterations = 10;
+        int iterations = args.length >= 1 ? Integer.parseInt(args[0]) : 10;
         int seed = 123;
 
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
